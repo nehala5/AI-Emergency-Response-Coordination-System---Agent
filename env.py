@@ -75,7 +75,8 @@ class DisasterResponseEnv:
             agent_positions=self.agent_positions,
             batteries=self.batteries,
             survivors=survivors_list,
-            flood_map=self.flood_map.tolist()
+            flood_map=self.flood_map.tolist(),
+            obstacles=self.obstacles
         )
 
     def step(self, action: Action) -> Tuple[Observation, Reward, bool]:
