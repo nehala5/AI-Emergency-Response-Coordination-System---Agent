@@ -141,14 +141,14 @@ def run_all_tasks():
     )
 
 # Gradio Dashboard
-with gr.Blocks(title="AI Emergency Response Coordination", css=".gradio-container {background: #fafafa;} label {font-weight: bold;}") as demo:
-    gr.Markdown("# 🚁 AI Emergency Response Mission Dashboard")
+with gr.Blocks(title="AI Emergency Response Coordination", css=".gradio-container {background: #111111; color: #ffffff;} .tabs {background: #1a1a1a; border: 1px solid #333333; border-radius: 8px;} button.primary {background: #ff9800 !important; border: none !important;} label {color: #bbbbbb !important; font-weight: bold;}") as demo:
+    gr.Markdown("# 🚁 <span style='color: #ff9800;'>AI Emergency Response Mission Dashboard</span>")
     gr.Markdown("Visualize coordinates and success metrics for the autonomous rescue drone fleet.")
     
     with gr.Row():
         run_btn = gr.Button("🚀 Launch Mission Simulation", variant="primary", scale=2)
     
-    with gr.Tabs():
+    with gr.Tabs(elem_classes="tabs"):
         with gr.Tab("Task 1: Easy Rescue"):
             with gr.Row():
                 e_status = gr.Textbox(label="Mission Status", interactive=False)
@@ -174,7 +174,7 @@ with gr.Blocks(title="AI Emergency Response Coordination", css=".gradio-containe
                 h_logs = gr.Textbox(interactive=False, lines=10)
 
     gr.Markdown("### ℹ️ Legend")
-    gr.Markdown("- **0, 1, 2:** Active Drones | **S:** Survivor | **R:** Rescued | **D:** Drowned | **X:** Obstacle")
+    gr.Markdown("- **<span style='color: #ff9800;'>0, 1, 2:</span>** Active Drones | **<span style='color: #4caf50;'>S:</span>** Survivor | **<span style='color: #1b5e20;'>R:</span>** Rescued | **<span style='color: #b71c1c;'>D:</span>** Drowned | **<span style='color: #555555;'>X:</span>** Obstacle")
 
     run_btn.click(
         run_all_tasks, 
