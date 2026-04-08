@@ -1,104 +1,79 @@
 import os
-from env import DisasterResponseEnv
-from models import Action
+import requests
 import numpy as np
-import heapq
 
-# Required environment variables
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-MODEL_NAME = os.getenv("MODEL_NAME", "disaster-response-agent")
+MODEL_NAME = os.getenv("MODEL_NAME", "default")
 HF_TOKEN = os.getenv("HF_TOKEN")
-LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
+headers = {}
+if HF_TOKEN:
+    headers["Authorization"] = f"Bearer {HF_TOKEN}"
 
-def astar_move(drone_pos, target_pos, obstacles, grid_size):
-    move_map = {
-        0: (0, 0), 1: (0, 1), 2: (0, -1),
-        3: (1, 0), 4: (-1, 0),
-        5: (1, 1), 6: (-1, 1),
-        7: (1, -1), 8: (-1, -1)
-    }
+def get_action(obs):
+    # simple nearest survivor logic (keep it basic for API)
+    moves = []
+    agents = obs["agent_positions"]
+    survivors = [s for s in obs["survivors"] if s[2] == "alive"]
 
-    pq = [(0, drone_pos)]
-    visited = set()
-    first_move = {}
-
-    while pq:
-        cost, curr = heapq.heappop(pq)
-
-        if curr in visited:
+    for ax, ay in agents:
+        if not survivors:
+            moves.append(0)
             continue
-        visited.add(curr)
+        
+        # nearest survivor
+        target = min(survivors, key=lambda s: abs(s[0]-ax)+abs(s[1]-ay))
+        tx, ty = target[0], target[1]
 
-        if curr == target_pos:
-            return first_move.get(curr, 0)
+        dx = np.sign(tx - ax)
+        dy = np.sign(ty - ay)
 
-        for m_idx, delta in move_map.items():
-            if m_idx == 0:
-                continue
+        move_map = {
+            (0, 0): 0,
+            (0, 1): 1, (0, -1): 2,
+            (1, 0): 3, (-1, 0): 4,
+            (1, 1): 5, (-1, 1): 6,
+            (1, -1): 7, (-1, -1): 8
+        }
 
-            neighbor = (curr[0] + delta[0], curr[1] + delta[1])
+        moves.append(move_map[(dx, dy)])
 
-            if (
-                0 <= neighbor[0] < grid_size[0]
-                and 0 <= neighbor[1] < grid_size[1]
-                and neighbor not in obstacles
-            ):
-                if neighbor not in visited:
-                    h = abs(target_pos[0] - neighbor[0]) + abs(target_pos[1] - neighbor[1])
-                    f = cost + 1 + h
-
-                    if curr == drone_pos:
-                        first_move[neighbor] = m_idx
-                    else:
-                        first_move[neighbor] = first_move[curr]
-
-                    heapq.heappush(pq, (f, neighbor))
-
-    return 0
+    return {"moves": moves}
 
 
-def run_agent(task_level="easy"):
-    env = DisasterResponseEnv(task_level=task_level)
-    obs = env.reset()
-
+def main():
     print("START")
 
-    done = False
-    while not done:
-        active_survivors = [s for s in obs.survivors if s[2] == "alive"]
-        moves = []
+    # 🔹 RESET
+    res = requests.post(f"{API_BASE_URL}/reset", headers=headers)
+    obs = res.json()
 
-        if task_level == "hard":
-            active_survivors.sort(key=lambda s: abs(s[0]) + abs(s[1]))
+    step = 0
 
-        claimed = set()
+    while True:
+        step += 1
 
-        for i, pos in enumerate(obs.agent_positions):
-            if not active_survivors:
-                moves.append(0)
-                continue
+        action = get_action(obs)
 
-            target = None
-            for s in active_survivors:
-                t = (s[0], s[1])
-                if t not in claimed:
-                    target = t
-                    claimed.add(t)
-                    break
+        # 🔹 STEP
+        res = requests.post(
+            f"{API_BASE_URL}/step",
+            json=action,
+            headers=headers
+        )
+        data = res.json()
 
-            if not target:
-                target = (active_survivors[0][0], active_survivors[0][1])
+        obs = data["observation"]
+        done = data["done"]
+        feedback = data["reward"]["feedback"]
 
-            move = astar_move(pos, target, set(obs.obstacles), env.grid_size)
-            moves.append(move)
+        print(f"STEP {step}: {feedback}")
 
-        obs, reward, done = env.step(Action(moves=moves))
-
-        print(f"STEP {env.steps}: {reward.feedback}")
+        if done:
+            break
 
     print("END")
 
 
 if __name__ == "__main__":
-    run_agent("easy")
+    main()
