@@ -3,6 +3,13 @@
 ## 🔹 Problem Statement
 In the immediate aftermath of natural disasters like floods, rapid and coordinated search-and-rescue is critical. This environment simulates autonomous drone coordination in a dynamic disaster zone. Drones must navigate complex grids to rescue survivors while managing limited battery life and responding to rising flood levels that threaten lives in real-time.
 
+## 🔹 Grid Symbols
+- `0, 1, 2` → Drones
+- `S` → Survivor (Alive)
+- `R` → Survivor (Rescued)
+- `D` → Survivor (Drowned)
+- `.` → Empty cell
+
 ## 🔹 Tasks (The 3-Tier Requirement)
 - **Task 1: easy_rescue (Easy)**
   - 1 Drone, 2 Survivors, 10x10 static grid.
