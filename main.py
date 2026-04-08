@@ -1,11 +1,14 @@
 from env import DisasterResponseEnv
 from models import Action, Observation
 import time
-import gradio as gr
 import sys
+import heapq
 from io import StringIO
 import numpy as np
-import heapq
+try:
+    import gradio as gr
+except ImportError:
+    gr = None
 
 def astar_move(drone_pos, target_pos, obstacles, grid_size):
     """
@@ -141,49 +144,51 @@ def run_all_tasks():
     )
 
 # Gradio Dashboard
-with gr.Blocks(title="AI Emergency Response Coordination", css=".gradio-container {background: #111111; color: #ffffff;} .tabs {background: #1a1a1a; border: 1px solid #333333; border-radius: 8px;} button.primary {background: #ff9800 !important; border: none !important;} label {color: #bbbbbb !important; font-weight: bold;}") as demo:
-    gr.Markdown("# 🚁 <span style='color: #ff9800;'>AI Emergency Response Mission Dashboard</span>")
-    gr.Markdown("Visualize coordinates and success metrics for the autonomous rescue drone fleet.")
-    
-    with gr.Row():
-        run_btn = gr.Button("🚀 Launch Mission Simulation", variant="primary", scale=2)
-    
-    with gr.Tabs(elem_classes="tabs"):
-        with gr.Tab("Task 1: Easy Rescue"):
-            with gr.Row():
-                e_status = gr.Textbox(label="Mission Status", interactive=False)
-            with gr.Row():
-                e_visual = gr.HTML()
-            with gr.Accordion("Mission Logs", open=False):
-                e_logs = gr.Textbox(interactive=False, lines=10)
-                
-        with gr.Tab("Task 2: Medium Coordination"):
-            with gr.Row():
-                m_status = gr.Textbox(label="Mission Status", interactive=False)
-            with gr.Row():
-                m_visual = gr.HTML()
-            with gr.Accordion("Mission Logs", open=False):
-                m_logs = gr.Textbox(interactive=False, lines=10)
-                
-        with gr.Tab("Task 3: Hard Dynamic Response"):
-            with gr.Row():
-                h_status = gr.Textbox(label="Mission Status", interactive=False)
-            with gr.Row():
-                h_visual = gr.HTML()
-            with gr.Accordion("Mission Logs", open=False):
-                h_logs = gr.Textbox(interactive=False, lines=10)
+if gr:
+    with gr.Blocks(title="AI Emergency Response Coordination", css=".gradio-container {background: #000000; color: #ffffff;} .tabs {background: #000000; border: 1px solid #333333; border-radius: 8px;} button.primary {background: #ff9800 !important; border: none !important;} label {color: #bbbbbb !important; font-weight: bold;} .gradio-container {max-width: 100% !important;}") as demo:
+        gr.Markdown("# 🚁 <span style='color: #ff9800;'>AI Emergency Response Mission Dashboard</span>")
+        gr.Markdown("Visualize coordinates and success metrics for the autonomous rescue drone fleet.")
+        
+        with gr.Row():
+            run_btn = gr.Button("🚀 Launch Mission Simulation", variant="primary", scale=2)
+        
+        with gr.Tabs(elem_classes="tabs"):
+            with gr.Tab("Task 1: Easy Rescue"):
+                with gr.Row():
+                    e_status = gr.Textbox(label="Mission Status", interactive=False)
+                with gr.Row():
+                    e_visual = gr.HTML()
+                with gr.Accordion("Mission Logs", open=False):
+                    e_logs = gr.Textbox(interactive=False, lines=10)
+                    
+            with gr.Tab("Task 2: Medium Coordination"):
+                with gr.Row():
+                    m_status = gr.Textbox(label="Mission Status", interactive=False)
+                with gr.Row():
+                    m_visual = gr.HTML()
+                with gr.Accordion("Mission Logs", open=False):
+                    m_logs = gr.Textbox(interactive=False, lines=10)
+                    
+            with gr.Tab("Task 3: Hard Dynamic Response"):
+                with gr.Row():
+                    h_status = gr.Textbox(label="Mission Status", interactive=False)
+                with gr.Row():
+                    h_visual = gr.HTML()
+                with gr.Accordion("Mission Logs", open=False):
+                    h_logs = gr.Textbox(interactive=False, lines=10)
 
-    gr.Markdown("### ℹ️ Legend")
-    gr.Markdown("- **<span style='color: #ff9800;'>0, 1, 2:</span>** Active Drones | **<span style='color: #4caf50;'>S:</span>** Survivor | **<span style='color: #1b5e20;'>R:</span>** Rescued | **<span style='color: #b71c1c;'>D:</span>** Drowned | **<span style='color: #555555;'>X:</span>** Obstacle")
+        gr.Markdown("### ℹ️ Legend")
+        gr.Markdown("- **<span style='color: #ff9800;'>0, 1, 2:</span>** Active Drones | **<span style='color: #4caf50;'>S:</span>** Survivor | **<span style='color: #1b5e20;'>R:</span>** Rescued | **<span style='color: #b71c1c;'>D:</span>** Drowned | **<span style='color: #555555;'>X:</span>** Obstacle")
 
-    run_btn.click(
-        run_all_tasks, 
-        outputs=[
-            e_visual, e_status, e_logs,
-            m_visual, m_status, m_logs,
-            h_visual, h_status, h_logs
-        ]
-    )
+        run_btn.click(
+            run_all_tasks, 
+            outputs=[
+                e_visual, e_status, e_logs,
+                m_visual, m_status, m_logs,
+                h_visual, h_status, h_logs
+            ]
+        )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    if gr:
+        demo.launch(server_name="0.0.0.0", server_port=7860)
