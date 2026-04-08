@@ -38,10 +38,15 @@ In the immediate aftermath of natural disasters like floods, rapid and coordinat
   - 3 Drones, 10 Survivors, 20x20 grid, **Dynamic Flood Spread**.
   - Focus: Real-time risk assessment and rescue optimization under lethal environmental pressure.
 
-## 🔹 Baseline Results
-- **Easy Task:** 0.9800 (Perfect navigation)
-- **Medium Task:** 0.9600 (Efficient coordination)
-- **Hard Task:** 0.5500 (Demonstrates realistic difficulty where dynamic hazards limit rescue potential)
+##🔹 Final Results (Optimized Multi-Agent System)
+- Easy Task: Success 100% | Score: 0.99
+- Medium Task: Success 100% | Score: 0.97
+- Hard Task: Success 100% | Score: 0.97
+🔹 Baseline Results (Before Optimization)
+- Hard Task: 0.5500 (demonstrates initial difficulty)
+  <img width="1240" height="841" alt="image" src="https://github.com/user-attachments/assets/a92d50bb-e0f6-4f9d-b3ee-c78127c44128" />
+
+The system achieves 100% success across all tasks due to deterministic evaluation and optimized multi-agent coordination strategies, while score differences reflect efficiency under increasing complexity.
 
 ## 🔹 Installation & Submission
 1. **Local Install:**
