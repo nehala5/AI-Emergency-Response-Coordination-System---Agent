@@ -44,10 +44,13 @@ def get_action(obs):
 def main():
     print("START")
 
-    # 🔹 RESET
+    # RESET
     res = requests.post(f"{API_BASE_URL}/reset", headers=headers)
+    if res.status_code != 200:
+        print("END")
+        return
+    
     obs = res.json()
-
     step = 0
 
     while True:
@@ -55,17 +58,22 @@ def main():
 
         action = get_action(obs)
 
-        # 🔹 STEP
+        # STEP
         res = requests.post(
             f"{API_BASE_URL}/step",
             json=action,
             headers=headers
         )
+
+        if res.status_code != 200:
+            print(f"STEP {step}: API error")
+            break
+
         data = res.json()
 
-        obs = data["observation"]
-        done = data["done"]
-        feedback = data["reward"]["feedback"]
+        obs = data.get("observation", obs)
+        done = data.get("done", True)
+        feedback = data.get("reward", {}).get("feedback", "No feedback")
 
         print(f"STEP {step}: {feedback}")
 
