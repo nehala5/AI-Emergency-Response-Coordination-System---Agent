@@ -8,54 +8,40 @@ pinned: false
 app_port: 7860
 ---
 
-# AI Emergency Response Coordination System (OpenEnv)
+# 🚁 AI Emergency Response Coordination System (OpenEnv)
 
-## 🔹 Problem Statement
-In the immediate aftermath of natural disasters like floods, rapid and coordinated search-and-rescue is critical. This environment simulates autonomous drone coordination in a dynamic disaster zone. Drones must navigate complex grids to rescue survivors while managing limited battery life and responding to rising flood levels that threaten lives in real-time.
+## 🔹 Real-World Motivation
+In the immediate aftermath of natural disasters like floods, rapid and coordinated search-and-rescue is critical. This environment simulates autonomous drone coordination in a dynamic disaster zone. Drones must navigate complex grids to rescue survivors while managing limited battery life and responding to **dynamic hazards** like rising flood levels and **static obstacles** (collapsed buildings) that threaten lives in real-time.
 
-## 🔹 Grid Symbols
-- `0, 1, 2` → Drones
-- `S` → Survivor (Alive)
-- `R` → Survivor (Rescued)
-- `D` → Survivor (Drowned)
-- `.` → Empty cell
+## 🔹 Advanced Engineering Features
+- **Dynamic Source-Based Flooding:** Unlike simple uniform rising water, the flood in this environment spreads from a specific source (e.g., origin point), requiring agents to prioritize survivors in the immediate path of the wave.
+- **Static Obstacles (`X`):** The grid includes collapsed buildings that drones must navigate around, adding a critical pathfinding layer to the coordination problem.
+- **Multi-Agent Coordination Baseline:** The included baseline demonstrates a coordinated strategy where multiple drones target different survivors simultaneously to maximize rescue efficiency.
+- **Deterministic Evaluation:** Uses a fixed random seed (`np.random.RandomState`) to ensure all evaluations are reproducible and consistent across different environments.
+
+## 🔹 Grid Legend
+- `0, 1, 2` → Active Rescue Drones
+- `S` → Survivor (Alive & Waiting)
+- `R` → Survivor (Successfully Rescued)
+- `D` → Survivor (Drowned/Lost)
+- `X` → Static Obstacle (Collapsed Building)
+- `.` → Empty Cell
 
 ## 🔹 Tasks (The 3-Tier Requirement)
 - **Task 1: easy_rescue (Easy)**
-  - 1 Drone, 2 Survivors, 10x10 static grid.
-  - Focus: Basic navigation and pathfinding.
+  - 1 Drone, 2 Survivors, 10x10 grid.
+  - Focus: Basic navigation and pathfinding around obstacles.
 - **Task 2: medium_coordination (Medium)**
   - 2 Drones, 5 Survivors, 15x15 grid, limited battery.
-  - Focus: Multi-agent coordination and energy management.
+  - Focus: Multi-agent coordination and energy-efficient path planning.
 - **Task 3: hard_dynamic_response (Hard)**
-  - 3 Drones, 10 Survivors, 20x20 grid, rising flood.
+  - 3 Drones, 10 Survivors, 20x20 grid, **Dynamic Flood Spread**.
   - Focus: Real-time risk assessment and rescue optimization under lethal environmental pressure.
 
-## 🔹 Observation Space
-The `Observation` model includes:
-- `agent_positions`: Current (x, y) coordinates for all drones.
-- `batteries`: Current energy levels for each drone.
-- `survivors`: List of survivors (x, y) and their status (`alive`, `rescued`, `drowned`).
-- `flood_map`: A grid representing current water levels (0.0 to 1.0).
-
-## 🔹 Action Space (0-8)
-Drones can perform 9 discrete actions:
-- `0`: Stay
-- `1-4`: Cardinal moves (North, South, East, West)
-- `5-8`: Diagonal moves (NE, NW, SE, SW)
-
-## 🔹 Reward & Grading Logic
-The environment uses a **Deterministic Grading Logic** for consistent scoring:
-- `Base Score`: `Rescued / Total Survivors`
-- `Penalty (Drowning)`: `-0.1` per Drowned survivor.
-- `Penalty (Time)`: `-0.01` per 10 steps taken.
-- `Penalty (Battery)`: `-0.05` per Battery depletion.
-
 ## 🔹 Baseline Results
-Running the provided `main.py` baseline policy:
-- **Easy:** 0.9800
-- **Medium:** 0.9600
-- **Hard:** 0.5500
+- **Easy Task:** 0.9800 (Perfect navigation)
+- **Medium Task:** 0.9600 (Efficient coordination)
+- **Hard Task:** 0.5500 (Demonstrates realistic difficulty where dynamic hazards limit rescue potential)
 
 ## 🔹 Installation & Submission
 1. **Local Install:**

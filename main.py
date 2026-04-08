@@ -23,9 +23,15 @@ def run_simulation(task_level: str = "easy"):
             if not active_survivors:
                 moves.append(0)
                 continue
-            target = active_survivors[0]
+            
+            # Coordination: Target different survivors
+            # Drone i targets survivor (i % num_survivors)
+            target_idx = i % len(active_survivors)
+            target = active_survivors[target_idx]
+            
             curr_pos = obs.agent_positions[i]
             dx, dy = target[0] - curr_pos[0], target[1] - curr_pos[1]
+            
             if dx > 0: move = 3
             elif dx < 0: move = 4
             elif dy > 0: move = 1

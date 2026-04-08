@@ -17,12 +17,24 @@ class DisasterResponseEnv:
         # Initial positions
         self.agent_positions = [(0, 0) for _ in range(self.num_drones)]
         
+        # Static Obstacles (Collapsed Buildings 'X')
+        self.obstacles = []
+        num_obstacles = int((self.grid_size[0] * self.grid_size[1]) * 0.05) # 5% of grid
+        for _ in range(num_obstacles):
+            ox = self.rng.randint(0, self.grid_size[0])
+            oy = self.rng.randint(0, self.grid_size[1])
+            if (ox, oy) != (0, 0): # Don't block spawn
+                self.obstacles.append((ox, oy))
+        
         # Survivors: (x, y, status)
         self.survivors = []
         for _ in range(self.config.num_survivors):
-            x = self.rng.randint(0, self.grid_size[0])
-            y = self.rng.randint(0, self.grid_size[1])
-            self.survivors.append([x, y, "alive"])
+            while True:
+                x = self.rng.randint(0, self.grid_size[0])
+                y = self.rng.randint(0, self.grid_size[1])
+                if (x, y) not in self.obstacles and (x, y) != (0, 0):
+                    self.survivors.append([x, y, "alive"])
+                    break
             
         # Flood map (0.0 to 1.0)
         self.flood_map = np.zeros(self.grid_size)
@@ -37,6 +49,9 @@ class DisasterResponseEnv:
 
     def render(self):
         grid = np.full(self.grid_size, ".", dtype=str)
+        # Add obstacles
+        for ox, oy in self.obstacles:
+            grid[ox, oy] = "X"
         # Add survivors
         for x, y, status in self.survivors:
             if status == "alive":
@@ -69,21 +84,25 @@ class DisasterResponseEnv:
         feedback = []
 
         # 1. Update Battery and Moves
-        # Moves: 0: Stay, 1: N, 2: S, 3: E, 4: W, 5: NE, 6: NW, 7: SE, 8: SW
         move_map = {0: (0, 0), 1: (0, 1), 2: (0, -1), 3: (1, 0), 4: (-1, 0), 
                     5: (1, 1), 6: (-1, 1), 7: (1, -1), 8: (-1, -1)}
 
         for i in range(self.num_drones):
             if self.batteries[i] <= 0:
-                feedback.append(f"Drone {i} battery depleted.")
                 continue
 
             move = move_map.get(action.moves[i], (0, 0))
             new_x = max(0, min(self.grid_size[0] - 1, self.agent_positions[i][0] + move[0]))
             new_y = max(0, min(self.grid_size[1] - 1, self.agent_positions[i][1] + move[1]))
             
-            self.agent_positions[i] = (new_x, new_y)
-            self.batteries[i] -= 1
+            # Obstacle check
+            if (new_x, new_y) in self.obstacles:
+                feedback.append(f"Drone {i} hit obstacle at ({new_x}, {new_y})!")
+                self.batteries[i] -= 1 # Penalty for hitting obstacle
+            else:
+                self.agent_positions[i] = (new_x, new_y)
+                self.batteries[i] -= 1
+            
             if self.batteries[i] == 0:
                 reward_score -= 0.05
 
@@ -97,12 +116,15 @@ class DisasterResponseEnv:
                     reward_score += (1.0 / self.config.num_survivors)
                     feedback.append(f"Survivor rescued at {drone_pos}!")
 
-        # 3. Flood Expansion
+        # 3. Source-based Dynamic Flooding (Expansion from 0,0)
         if self.config.rising_flood:
-            # Simple flood logic: random spread or rising from bottom
-            # For simplicity: increase flood level across whole map or specific points
-            self.flood_map += (self.config.flood_rate / 10.0) # Slow rise
-            self.flood_map = np.clip(self.flood_map, 0.0, 1.0)
+            # Water spreads based on distance from origin
+            for x in range(self.grid_size[0]):
+                for y in range(self.grid_size[1]):
+                    dist = np.sqrt(x**2 + y**2)
+                    threshold = self.steps * self.config.flood_rate * 2.0
+                    if dist < threshold:
+                        self.flood_map[x, y] = min(1.0, self.flood_map[x, y] + 0.1)
             
             # Check for drowning
             for s in self.survivors:
