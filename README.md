@@ -1,3 +1,13 @@
+---
+title: AI Emergency Response Coordination System
+emoji: 🚁
+colorFrom: blue
+colorTo: red
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # AI Emergency Response Coordination System (OpenEnv)
 
 ## 🔹 Problem Statement
