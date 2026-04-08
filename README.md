@@ -44,7 +44,6 @@ In the immediate aftermath of natural disasters like floods, rapid and coordinat
 - Hard Task: Success 100% | Score: 0.97
 🔹 Baseline Results (Before Optimization)
 - Hard Task: 0.5500 (demonstrates initial difficulty)
-  <img width="1240" height="841" alt="image" src="https://github.com/user-attachments/assets/a92d50bb-e0f6-4f9d-b3ee-c78127c44128" />
 
 The system achieves 100% success across all tasks due to deterministic evaluation and optimized multi-agent coordination strategies, while score differences reflect efficiency under increasing complexity.
 
