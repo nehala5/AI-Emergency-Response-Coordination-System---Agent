@@ -1,0 +1,21 @@
+name: "emergency-response-env"
+description: "AI-based disaster response coordination system for rescue drones."
+version: "1.0.0"
+author: "SAI"
+entry_point: "env:DisasterResponseEnv"
+tasks:
+  - id: "easy"
+    name: "easy_rescue"
+    difficulty: "easy"
+  - id: "medium"
+    name: "medium_coordination"
+    difficulty: "medium"
+  - id: "hard"
+    name: "hard_dynamic_response"
+    difficulty: "hard"
+observation_space: "Observation"
+action_space: "Action"
+reward: "Reward"
+requirements:
+  - numpy
+  - pydantic
