@@ -41,7 +41,7 @@ def astar_move(drone_pos, target_pos, obstacles, grid_size):
 
 def env_to_html(env):
     """
-    Generates a color-coded HTML grid representing the current environment state.
+    Generates a color-coded HTML grid with a dark theme for high visibility.
     """
     grid_data = np.full(env.grid_size, ".", dtype=str)
     for ox, oy in env.obstacles: grid_data[ox, oy] = "X"
@@ -51,37 +51,30 @@ def env_to_html(env):
         elif status == "drowned": grid_data[x, y] = "D"
     for i, (x, y) in enumerate(env.agent_positions): grid_data[x, y] = str(i)
 
-    # Styling mapping
+    # High-contrast styling mapping
     colors = {
-        "X": "#4a4a4a", # Dark Grey Obstacle
-        "S": "#81c784", # Light Green Survivor
-        "R": "#2e7d32", # Dark Green Rescued
-        "D": "#c62828", # Dark Red Drowned
-        ".": "#e0e0e0", # Light Grey Empty
+        "X": "#555555", # Grey Obstacle
+        "S": "#4caf50", # Green Survivor
+        "R": "#1b5e20", # Deep Green Rescued
+        "D": "#b71c1c", # Deep Red Drowned
+        ".": "#333333", # Dark Grey Empty
         "0": "#ff9800", # Orange Drone 0
         "1": "#fbc02d", # Yellow Drone 1
         "2": "#ff5722", # Deep Orange Drone 2
     }
 
-    # Transpose and flip to match render() logic (Y-axis points up)
     grid_data = grid_data.T[::-1]
     
-    html = '<div style="display: grid; grid-template-columns: repeat({}, 25px); gap: 4px; background: #f5f5f5; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">'.format(env.grid_size[0])
+    # Dark container for "Command Center" feel
+    html = '<div style="display: grid; grid-template-columns: repeat({}, 22px); gap: 3px; background: #212121; padding: 20px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); border: 2px solid #424242; width: fit-content; margin: auto;">'.format(env.grid_size[0])
     
     for row in grid_data:
         for cell in row:
             bg_color = colors.get(cell, colors["."])
-            if cell.isdigit(): # Drone cells
-                text_color = "white"
-                content = f"<b>{cell}</b>"
-            elif cell in ["S", "R", "D", "X"]:
-                text_color = "white"
-                content = cell
-            else:
-                text_color = "#bdbdbd"
-                content = "."
+            text_color = "white" if cell != "." else "#666666"
+            content = f"<b>{cell}</b>" if cell != "." else "·"
                 
-            html += f'<div style="width: 25px; height: 25px; background: {bg_color}; color: {text_color}; display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: 14px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.05);">{content}</div>'
+            html += f'<div style="width: 22px; height: 22px; background: {bg_color}; color: {text_color}; display: flex; align-items: center; justify-content: center; font-family: \'Courier New\', Courier, monospace; font-size: 12px; border-radius: 3px; transition: transform 0.2s;">{content}</div>'
     
     html += '</div>'
     return html
