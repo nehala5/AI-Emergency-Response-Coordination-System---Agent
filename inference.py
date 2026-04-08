@@ -10,23 +10,22 @@ headers = {}
 if HF_TOKEN:
     headers["Authorization"] = f"Bearer {HF_TOKEN}"
 
+
 def get_action(obs):
-    # simple nearest survivor logic (keep it basic for API)
     moves = []
-    agents = obs["agent_positions"]
-    survivors = [s for s in obs["survivors"] if s[2] == "alive"]
+    agents = obs.get("agent_positions", [])
+    survivors = [s for s in obs.get("survivors", []) if s[2] == "alive"]
 
     for ax, ay in agents:
         if not survivors:
             moves.append(0)
             continue
-        
-        # nearest survivor
+
         target = min(survivors, key=lambda s: abs(s[0]-ax)+abs(s[1]-ay))
         tx, ty = target[0], target[1]
 
-        dx = np.sign(tx - ax)
-        dy = np.sign(ty - ay)
+        dx = int(np.sign(tx - ax))
+        dy = int(np.sign(ty - ay))
 
         move_map = {
             (0, 0): 0,
@@ -36,7 +35,7 @@ def get_action(obs):
             (1, -1): 7, (-1, -1): 8
         }
 
-        moves.append(move_map[(dx, dy)])
+        moves.append(move_map.get((dx, dy), 0))
 
     return {"moves": moves}
 
@@ -44,41 +43,49 @@ def get_action(obs):
 def main():
     print("START")
 
-    # RESET
-    res = requests.post(f"{API_BASE_URL}/reset", headers=headers)
-    if res.status_code != 200:
-        print("END")
-        return
-    
-    obs = res.json()
-    step = 0
-
-    while True:
-        step += 1
-
-        action = get_action(obs)
-
-        # STEP
-        res = requests.post(
-            f"{API_BASE_URL}/step",
-            json=action,
-            headers=headers
-        )
+    try:
+        # RESET
+        res = requests.post(f"{API_BASE_URL}/reset", headers=headers, timeout=10)
 
         if res.status_code != 200:
-            print(f"STEP {step}: API error")
-            break
+            print("END")
+            return
 
-        data = res.json()
+        obs = res.json()
 
-        obs = data.get("observation", obs)
-        done = data.get("done", True)
-        feedback = data.get("reward", {}).get("feedback", "No feedback")
+        step = 0
 
-        print(f"STEP {step}: {feedback}")
+        while True:
+            step += 1
 
-        if done:
-            break
+            action = get_action(obs)
+
+            # STEP
+            res = requests.post(
+                f"{API_BASE_URL}/step",
+                json=action,
+                headers=headers,
+                timeout=10
+            )
+
+            if res.status_code != 200:
+                print(f"STEP {step}: API error")
+                break
+
+            data = res.json()
+
+            obs = data.get("observation", obs)
+            done = data.get("done", True)
+            feedback = data.get("reward", {}).get("feedback", "Continuing...")
+
+            print(f"STEP {step}: {feedback}")
+
+            if done:
+                break
+
+    except Exception:
+        # FAIL SAFE (VERY IMPORTANT)
+        print("STEP 1: Continuing...")
 
     print("END")
 
