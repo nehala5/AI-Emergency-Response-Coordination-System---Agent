@@ -26,9 +26,9 @@ def get_task_config(level: str) -> TaskConfig:
         "medium": TaskConfig(
             name="Task 2: Coordination",
             num_drones=2,
-            num_survivors=5,
+            num_survivors=6,
             grid_size=(15, 15),
-            battery_limit=50,
+            battery_limit=42, 
             rising_flood=False,
             flood_rate=0.0,
             seed=42,
@@ -36,11 +36,11 @@ def get_task_config(level: str) -> TaskConfig:
         "hard": TaskConfig(
             name="Task 3: Flood Rescue",
             num_drones=3,
-            num_survivors=10,
+            num_survivors=100, 
             grid_size=(20, 20),
-            battery_limit=100,
+            battery_limit=500,
             rising_flood=True,
-            flood_rate=0.05,
+            flood_rate=0.12, 
             seed=42,
         ),
     }

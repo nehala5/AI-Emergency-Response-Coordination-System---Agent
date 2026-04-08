@@ -17,14 +17,17 @@ class DisasterResponseEnv:
         # Initial positions
         self.agent_positions = [(0, 0) for _ in range(self.num_drones)]
         
-        # Static Obstacles (Collapsed Buildings 'X')
-        self.obstacles = []
-        num_obstacles = int((self.grid_size[0] * self.grid_size[1]) * 0.05) # 5% of grid
-        for _ in range(num_obstacles):
+        # ✅ UPDATED: Static Obstacles (no duplicates)
+        self.obstacles = set()
+        num_obstacles = int((self.grid_size[0] * self.grid_size[1]) * 0.05)
+
+        while len(self.obstacles) < num_obstacles:
             ox = self.rng.randint(0, self.grid_size[0])
             oy = self.rng.randint(0, self.grid_size[1])
-            if (ox, oy) != (0, 0): # Don't block spawn
-                self.obstacles.append((ox, oy))
+            if (ox, oy) != (0, 0):  # Don't block spawn
+                self.obstacles.add((ox, oy))
+
+        self.obstacles = list(self.obstacles)
         
         # Survivors: (x, y, status)
         self.survivors = []
@@ -144,7 +147,7 @@ class DisasterResponseEnv:
                (all(b <= 0 for b in self.batteries)) or \
                (self.steps >= 200)
 
-        reward = Reward(score=reward_score, feedback="; ".join(feedback) if feedback else "Continuing...")
+        reward = Reward(score=reward_score, feedback="; ".join(feedback) if feedback else "no_event")
         return self.get_observation(), reward, done
 
     def get_final_score(self) -> float:

@@ -86,6 +86,8 @@ def run_simulation(task_level: str = "easy"):
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
     
+    print("START")
+
     env = DisasterResponseEnv(task_level=task_level)
     obs = env.reset()
     done = False
@@ -93,29 +95,42 @@ def run_simulation(task_level: str = "easy"):
     while not done:
         active_survivors = [s for s in obs.survivors if s[2] == "alive"]
         moves = []
-        if task_level == "hard": active_survivors.sort(key=lambda s: np.sqrt(s[0]**2 + s[1]**2))
-            
         claimed_survivors = set()
+
         for i in range(len(obs.agent_positions)):
             curr_pos = obs.agent_positions[i]
+
             if not active_survivors:
-                moves.append(0); continue
-            
-            target = None
-            for s in active_survivors:
-                s_tuple = (s[0], s[1])
-                if s_tuple not in claimed_survivors:
-                    target = s_tuple; claimed_survivors.add(s_tuple); break
-            
-            if not target:
-                dists = [abs(s[0] - curr_pos[0]) + abs(s[1] - curr_pos[1]) for s in active_survivors]
-                target = (active_survivors[np.argmin(dists)][0], active_survivors[np.argmin(dists)][1])
-            
-            moves.append(astar_move(curr_pos, target, set(obs.obstacles), env.grid_size))
-        
+                moves.append(0)
+                continue
+
+            # 🔥 Smart scoring (distance + flood risk)
+            def priority(s):
+                dist = abs(s[0] - curr_pos[0]) + abs(s[1] - curr_pos[1])
+                flood_risk = obs.flood_map[s[0]][s[1]] if task_level == "hard" else 0
+                return dist - (flood_risk * 8)   # HIGH priority if about to drown
+
+            # Filter unclaimed survivors
+            available = [s for s in active_survivors if (s[0], s[1]) not in claimed_survivors]
+
+            if available:
+                best = min(available, key=priority)
+                target = (best[0], best[1])
+                claimed_survivors.add(target)
+            else:
+                # fallback if all claimed
+                best = min(active_survivors, key=priority)
+                target = (best[0], best[1])
+
+            move = astar_move(curr_pos, target, set(obs.obstacles), env.grid_size)
+            moves.append(move)
+
         obs, reward, done = env.step(Action(moves=moves))
-        if "rescued" in reward.feedback or "drowned" in reward.feedback:
-            print(f"Step {env.steps}: {reward.feedback}")
+
+        # ✅ Structured STEP logging
+        print(f"STEP {env.steps}: {reward.feedback}")
+
+    print("END")
 
     final_score = env.get_final_score()
     success_rate = (env.rescued_count / env.config.num_survivors) * 100
@@ -131,7 +146,6 @@ def run_simulation(task_level: str = "easy"):
     visual_grid = env_to_html(env)
     sys.stdout = old_stdout
     return stats, visual_grid, mystdout.getvalue()
-
 def run_all_tasks():
     e_stats, e_grid, e_log = run_simulation("easy")
     m_stats, m_grid, m_log = run_simulation("medium")
@@ -190,5 +204,18 @@ if gr:
         )
 
 if __name__ == "__main__":
+    print("START")
+
+    e_stats, _, _ = run_simulation("easy")
+    print(f"STEP EASY: Success={e_stats['success']} Rescued={e_stats['rescued']}")
+
+    m_stats, _, _ = run_simulation("medium")
+    print(f"STEP MEDIUM: Success={m_stats['success']} Rescued={m_stats['rescued']}")
+
+    h_stats, _, _ = run_simulation("hard")
+    print(f"STEP HARD: Success={h_stats['success']} Rescued={h_stats['rescued']}")
+
+    print("END")
+
     if gr:
         demo.launch(server_name="0.0.0.0", server_port=7860)
