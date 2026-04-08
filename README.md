@@ -10,6 +10,9 @@ app_port: 7860
 
 # 🚁 AI Emergency Response Coordination System (OpenEnv)
 
+## 🔗 Live Demo
+👉 Try the interactive simulation here: [Hugging Face Space](https://huggingface.co/spaces/nehal2006/AI-emergency-response-env)
+
 ## 🔹 Real-World Motivation
 In the immediate aftermath of natural disasters like floods, rapid and coordinated search-and-rescue is critical. This environment simulates autonomous drone coordination in a dynamic disaster zone. Drones must navigate complex grids to rescue survivors while managing limited battery life and responding to **dynamic hazards** like rising flood levels and **static obstacles** (collapsed buildings) that threaten lives in real-time.
 
@@ -42,7 +45,7 @@ In the immediate aftermath of natural disasters like floods, rapid and coordinat
 - Easy Task: Success 100% | Score: 0.99
 - Medium Task: Success 100% | Score: 0.97
 - Hard Task: Success 100% | Score: 0.97
-🔹 Baseline Results (Before Optimization)
+##🔹 Baseline Results (Before Optimization)
 - Hard Task: 0.5500 (demonstrates initial difficulty)
 
 The system achieves 100% success across all tasks due to deterministic evaluation and optimized multi-agent coordination strategies, while score differences reflect efficiency under increasing complexity.
@@ -61,3 +64,4 @@ The system achieves 100% success across all tasks due to deterministic evaluatio
    ```bash
    docker build -t emergency-response .
    ```
+
