@@ -4,3 +4,5 @@ gradio
 fastapi
 uvicorn
 requests
+openenv-core>=0.2.0
+openai
