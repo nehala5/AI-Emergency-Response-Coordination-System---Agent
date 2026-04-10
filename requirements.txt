@@ -1,3 +1,6 @@
 numpy
 pydantic
 gradio
+fastapi
+uvicorn
+requests
