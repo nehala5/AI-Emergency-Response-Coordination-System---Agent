@@ -29,6 +29,10 @@ dependencies = [
 [project.scripts]
 server = "server.app:main"
 
+[tool.setuptools]
+py-modules = ["env", "models", "tasks"]
+packages = ["server"]
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["*"]
+include = ["server*"]
