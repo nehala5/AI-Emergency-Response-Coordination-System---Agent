@@ -1,116 +1,93 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+import os
+import requests
 import numpy as np
-import uvicorn
+import time
 
-app = FastAPI()
+# Required environment variables
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:7860")
+MODEL_NAME = os.getenv("MODEL_NAME", "disaster-response-agent")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-GRID_SIZE = 10
-N_AGENTS = 3
+headers = {}
+if HF_TOKEN:
+    headers["Authorization"] = f"Bearer {HF_TOKEN}"
 
-class EnvState:
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.step_count = 0
-        self.done = False
-        self.agents = [[4, 4], [4, 5], [5, 4]]
-        self.survivors = [
-            [1, 2, "alive"], [3, 7, "alive"], [6, 1, "alive"],
-            [7, 8, "alive"], [2, 5, "alive"]
-        ]
-        self.water_cells = [[0, 5], [1, 5], [2, 5]]
-        self.safe_zones = [[0, 0], [0, 9], [9, 0], [9, 9]]
-        self.rescued = 0
-        return self._obs()
-
-    def _obs(self):
-        return {
-            "agent_positions": self.agents,
-            "survivors": self.survivors,
-            "water_cells": self.water_cells,
-            "safe_zones": self.safe_zones,
-            "step": self.step_count,
-            "rescued": self.rescued
+def get_action(obs):
+    """
+    Simple heuristic: move drones towards the nearest alive survivors.
+    """
+    moves = []
+    agent_positions = obs.get("agent_positions", [])
+    survivors = obs.get("survivors", [])
+    obstacles = set(tuple(o) for o in obs.get("obstacles", []))
+    
+    active_survivors = [s for s in survivors if s[2] == "alive"]
+    
+    for i, pos in enumerate(agent_positions):
+        if not active_survivors:
+            moves.append(0)
+            continue
+        
+        # Find nearest survivor
+        target = min(active_survivors, key=lambda s: abs(s[0]-pos[0]) + abs(s[1]-pos[1]))
+        tx, ty = target[0], target[1]
+        ax, ay = pos[0], pos[1]
+        
+        # Simple greedy move
+        dx = np.sign(tx - ax)
+        dy = np.sign(ty - ay)
+        
+        # Map (dx, dy) to move index (0-8)
+        # 0: (0,0), 1: (0,1), 2: (0,-1), 3: (1,0), 4: (-1,0), 
+        # 5: (1,1), 6: (-1,1), 7: (1,-1), 8: (-1,-1)
+        move_map = {
+            (0, 0): 0, (0, 1): 1, (0, -1): 2,
+            (1, 0): 3, (-1, 0): 4, (1, 1): 5,
+            (-1, 1): 6, (1, -1): 7, (-1, -1): 8
         }
+        
+        move = move_map.get((dx, dy), 0)
+        moves.append(int(move))
+        
+    return {"moves": moves}
 
-    def step(self, moves):
-        self.step_count += 1
-        reward_total = -0.1
+def main():
+    print("START")
+    
+    # 1. Reset Environment
+    try:
+        response = requests.post(f"{API_BASE_URL}/reset", headers=headers, params={"task_id": "easy"})
+        response.raise_for_status()
+        obs = response.json()
+    except Exception as e:
+        print(f"Failed to connect to environment: {e}")
+        return
 
-        deltas = {
-            0: (0,0), 1: (0,1), 2: (0,-1),
-            3: (1,0), 4: (-1,0), 5: (1,1),
-            6: (-1,1), 7: (1,-1), 8: (-1,-1)
-        }
+    done = False
+    step_count = 0
+    
+    # 2. Step Loop
+    while not done and step_count < 200:
+        step_count += 1
+        
+        action = get_action(obs)
+        
+        try:
+            response = requests.post(f"{API_BASE_URL}/step", json=action, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            
+            obs = data["observation"]
+            reward = data["reward"]
+            done = data["done"]
+            
+            print(f"STEP {step_count}: {reward.get('feedback', 'no_feedback')}")
+            
+        except Exception as e:
+            print(f"Error during step: {e}")
+            break
+            
+    print("END")
 
-        for i, move in enumerate(moves[:N_AGENTS]):
-            ax, ay = self.agents[i]
-            dr, dc = deltas.get(int(move), (0, 0))
-            nr = max(0, min(GRID_SIZE-1, ax+dr))
-            nc = max(0, min(GRID_SIZE-1, ay+dc))
-            self.agents[i] = [nr, nc]
-
-            for s in self.survivors:
-                if s[2] == "alive" and s[0] == nr and s[1] == nc:
-                    s[2] = "rescued"
-                    self.rescued += 1
-                    reward_total += 10
-
-        if self.step_count % 7 == 0 and self.water_cells:
-            base = self.water_cells[np.random.randint(len(self.water_cells))]
-            dr2, dc2 = int(np.random.choice([-1,0,1])), int(np.random.choice([-1,0,1]))
-            nr2 = max(0, min(GRID_SIZE-1, base[0]+dr2))
-            nc2 = max(0, min(GRID_SIZE-1, base[1]+dc2))
-            if [nr2, nc2] not in self.safe_zones:
-                self.water_cells.append([nr2, nc2])
-                for s in self.survivors:
-                    if s[2] == "alive" and s[0] == nr2 and s[1] == nc2:
-                        s[2] = "drowned"
-                        reward_total -= 5
-
-        alive = [s for s in self.survivors if s[2] == "alive"]
-        self.done = len(alive) == 0 or self.step_count >= 200
-
-        return self._obs(), reward_total, self.done
-
-
-env = EnvState()
-
-
-@app.get("/")
-def root():
-    return {"status": "running", "env": "disaster-response"}
-
-
-@app.get("/reset")
-@app.post("/reset")
-def reset():
-    obs = env.reset()
-    return {"observation": obs}
-
-
-class StepRequest(BaseModel):
-    moves: list = [0, 0, 0]
-
-
-@app.get("/step")
-@app.post("/step")
-def step(body: StepRequest = None):
-    moves = body.moves if body else [0, 0, 0]
-    obs, reward, done = env.step(moves)
-    return {
-        "observation": obs,
-        "reward": {
-            "value": round(reward, 3),
-            "feedback": f"Step {env.step_count} done"
-        },
-        "done": done,
-        "info": {"rescued": env.rescued}
-    }
-
-
-@app.get("/observation")
-def observation():
-    return {"observation": env._obs()}
+if __name__ == "__main__":
+    main()
