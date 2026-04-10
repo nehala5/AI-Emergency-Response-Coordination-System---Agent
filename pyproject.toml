@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emergency-response-env"
+version = "1.0.0"
+authors = [
+  { name="SAI", email="23wh1a05a5@bvrithyderabad.edu.in" },
+]
+description = "AI-based disaster response coordination system for rescue drones."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "pydantic",
+    "gradio",
+    "fastapi",
+    "uvicorn",
+    "requests",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
