@@ -36,12 +36,16 @@ def run_task(task_id, task_name, env_url, llm_config):
     headers = {"Authorization": f"Bearer {llm_config['token']}"} if llm_config['token'] else {}
     
     try:
-        # 1. Reset
-        try:
-            res = requests.post(f"{env_url}/reset", params={"task_id": task_id}, headers=headers, timeout=10)
-            obs = res.json()
-        except Exception:
-            obs = None
+        # 1. Reset with Retry
+        obs = None
+        for _ in range(3):
+            try:
+                res = requests.post(f"{env_url}/reset", params={"task_id": task_id}, headers=headers, timeout=10)
+                if res.status_code == 200:
+                    obs = res.json()
+                    break
+            except:
+                time.sleep(2)
 
         if obs:
             # 2. Mandatory LLM Call (Using late import to avoid early crash)
@@ -74,17 +78,27 @@ def run_task(task_id, task_name, env_url, llm_config):
                     break
     finally:
         # CRITICAL: Print [END] always
-        score = max(0.0, min(1.0, total_reward))
+        # Ensure score is strictly in (0, 1) as required by validator
+        score = max(0.0001, min(0.9999, total_reward))
         print_flush(f"[END] task={task_name} score={score:.4f} steps={step_count}")
+
+def wait_for_server(url, timeout=60):
+    """Wait for the environment server to be ready."""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            response = requests.get(f"{url}/state", timeout=2)
+            if response.status_code == 200:
+                return True
+        except Exception:
+            pass
+        time.sleep(2)
+    return False
 
 def main():
     # Environment Setup
-    # Try ENV_URL, then API_BASE_URL (as fallback), then localhost
-    env_url = os.getenv("ENV_URL")
-    if not env_url:
-        env_url = os.getenv("API_BASE_URL", "http://localhost:7860")
-    
-    # Ensure URL doesn't have trailing slash for consistency
+    # Prioritize ENV_URL, fallback to localhost:7860
+    env_url = os.getenv("ENV_URL", "http://localhost:7860")
     env_url = env_url.rstrip("/")
     if not env_url.startswith("http"):
         env_url = f"http://{env_url}"
@@ -94,6 +108,9 @@ def main():
         "model": os.getenv("MODEL_NAME", "gpt-3.5-turbo"),
         "token": os.getenv("HF_TOKEN")
     }
+
+    # Wait for environment server to be ready
+    wait_for_server(env_url)
 
     # Task mapping from openenv.yaml
     tasks = [
